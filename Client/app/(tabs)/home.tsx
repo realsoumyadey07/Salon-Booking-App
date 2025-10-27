@@ -181,7 +181,7 @@ export default function HomeScreen() {
           </View>
           <View style={{ padding: 10 }}>
             <Text style={styles.sectionHeading}>Book an appointment</Text>
-            {/* service components */}
+            
             <ScrollView
               horizontal
               contentContainerStyle={{
