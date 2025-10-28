@@ -1,5 +1,7 @@
 import { Model, model, Schema } from "mongoose";
 import { IBaseUser, IStylist } from "../types/user.types";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -30,7 +32,7 @@ const userSchema = new Schema<IBaseUser>(
       type: String,
       default: "user",
       enum: ["user", "admin", "stylist"],
-      required: true
+      required: true,
     },
     phone: {
       type: String,
@@ -42,12 +44,44 @@ const userSchema = new Schema<IBaseUser>(
       url: String,
       public_id: String,
     },
+    refresh_token: {
+      type: String,
+    },
   },
   {
     timestamps: true,
     discriminatorKey: "role",
   }
 );
+
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) {
+    next();
+  }
+  this.password = await bcrypt.hash(this.password, 10);
+});
+
+userSchema.methods.comparePassword = async function (enteredPassword: string) {
+  return await bcrypt.compare(enteredPassword, this.password);
+}
+
+userSchema.methods.signAccessToken = function () {
+  return jwt.sign(
+    {
+      id: this._id,
+    },
+    process.env.ACCESS_TOKEN as string
+  );
+};
+
+userSchema.methods.signRefreshToken = function () {
+  return jwt.sign(
+    {
+      id: this._id,
+    },
+    process.env.REFRESH_TOKEN as string
+  );
+};
 
 export const User: Model<IBaseUser> = model<IBaseUser>("User", userSchema);
 
